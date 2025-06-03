@@ -107,7 +107,7 @@ Resources:
     Properties:
       LaunchTemplateName: my-launch-template
       LaunchTemplateData:
-        ImageId: ami-06dfe9bc055cebba8
+        ImageId: ami-0e35ddab05955cf57
         InstanceType: t2.micro
         SecurityGroupIds:
           - !Ref InstanceSecurityGroup
