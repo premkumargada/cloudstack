@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: VPC with 2 public subnets, IGW, route table, ALB, and Auto Scaling Group
+Description: VPC with 2 public subnets, IGW, route table, ALB, and Auto Scaling Group using Launch Template
 
 Parameters:
   VpcCidr:
@@ -102,21 +102,23 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  LaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      ImageId: ami-06dfe9bc055cebba8  # Your specified AMI ID
-      InstanceType: t2.micro
-      SecurityGroups:
-        - !Ref InstanceSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          yum update -y
-          yum install -y httpd
-          systemctl start httpd
-          systemctl enable httpd
-          echo "Hello from $(hostname -f)" > /var/www/html/index.html
+      LaunchTemplateName: my-launch-template
+      LaunchTemplateData:
+        ImageId: ami-06dfe9bc055cebba8
+        InstanceType: t2.micro
+        SecurityGroupIds:
+          - !Ref InstanceSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            echo "Hello from $(hostname -f)" > /var/www/html/index.html
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -163,12 +165,14 @@ Resources:
       VPCZoneIdentifier:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
-      LaunchConfigurationName: !Ref LaunchConfiguration
       MinSize: 1
       MaxSize: 2
       DesiredCapacity: 1
       TargetGroupARNs:
         - !Ref ALBTargetGroup
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
 
 Outputs:
   LoadBalancerDNSName:
